@@ -188,6 +188,41 @@ def update_s(conn: sqlite3.Connection) -> None:
     conn.commit()
     print(f"=> 銷售編號 {sid} 已更新！(銷售總額: {total:,})")
 
+def delete_s(conn: sqlite3.Connection) -> None:
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT s.sid, s.sdate, m.mname
+        FROM sale s
+        JOIN member m ON s.mid = m.mid
+        ORDER BY s.sid
+    """)
+    sales = cursor.fetchall()
+
+    if not sales:
+        print("=> 無銷售資料")
+        return
+
+    print("\n======== 銷售記錄列表 ========")
+    for idx, row in enumerate(sales, start=1):
+        print(f"{idx}. 銷售編號: {row['sid']} - 會員: {row['mname']} - 日期: {row['sdate']}")
+    print("================================")
+
+    try:
+        choice = input("請選擇要刪除的銷售編號 (輸入數字或按 Enter 取消): ").strip()
+        if not choice:
+            return
+        idx = int(choice)
+        if idx < 1 or idx > len(sales):
+            raise ValueError
+    except ValueError:
+        print("=> 錯誤：請輸入有效的數字")
+        return
+
+    sid = sales[idx - 1]["sid"]
+    cursor.execute("DELETE FROM sale WHERE sid = ?", (sid,))
+    conn.commit()
+    print(f"=> 銷售編號 {sid} 已刪除")
+
 def main():
 
     with conn_db() as conn:
@@ -210,7 +245,7 @@ def main():
             elif choice == "3":
                 update_s(conn)
             elif choice == "4":
-                ()
+                delete_s(conn)
             elif choice == "5":
                 break
             else:
